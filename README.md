@@ -1,50 +1,90 @@
-# Welcome to your Expo app 👋
+# FieldOps Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+FieldOps Mobile is a cross-platform task and field operations management app built with React Native and Expo. The app is designed to help teams manage daily tasks, track recent activity, monitor progress, and organize operational workflows through a clean and modern mobile interface.
 
-## Get started
+## Features
 
-1. Install dependencies
+* User Login & Signup
+* Task Dashboard
+* Recent Activity Screen
+* Task Status Tracking
+* API Integration
+* Responsive Mobile UI
+* Reusable Components
+* Cross-Platform Support (Android + Web)
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+* React Native
+* Expo
+* TypeScript
+* Zustand
+* NativeWind / Tailwind Styling
+* React Navigation / Expo Router
 
-   ```bash
-   npx expo start
-   ```
+## Design
 
-In the output, you'll find options to open the app in a
+The app uses a modern dark theme with:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+* Minimal UI
+* High contrast typography
+* Orange accent branding
+* Mobile-first layouts
+* Reusable design system
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Project Structure
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```txt id="ffx6pw"
+src/
+├── components/
+├── screens/
+├── navigation/
+├── store/
+├── services/
+├── hooks/
+├── utils/
+├── constants/
+└── assets/
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Goals
 
-## Learn more
+This project focuses on:
 
-To learn more about developing your project with Expo, look at the following resources:
+* Clean architecture
+* Reusable UI components
+* Scalable frontend structure
+* Industry-standard React Native practices
+* Real-world mobile workflows
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Future Improvements
 
-## Join the community
+* Real-time updates
+* Offline support
+* Role-based access
+* Analytics
+* File uploads
+* Map integration
 
-Join our community of developers creating universal apps.
+## Getting Started
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Install dependencies:
+
+```bash id="i9yz5v"
+npm install
+```
+
+Start the development server:
+
+```bash id="prhn24"
+npx expo start
+```
+
+Run on Android:
+
+```bash id="2tfm0e"
+npx expo run:android
+```
+
+## Author
+Rodas Awgichew
