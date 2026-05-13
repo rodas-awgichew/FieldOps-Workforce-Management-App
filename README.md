@@ -70,21 +70,15 @@ This project focuses on:
 
 Install dependencies:
 
-```bash id="i9yz5v"
-npm install
-```
+   npm install
 
 Start the development server:
 
-```bash id="prhn24"
-npx expo start
-```
+   npx expo start
 
 Run on Android:
 
-```bash id="2tfm0e"
-npx expo run:android
-```
+   npx expo run:android
 
 ## Author
 Rodas Awgichew
