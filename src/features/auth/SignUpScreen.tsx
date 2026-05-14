@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, Text, View, Pressable } from "react-nat
 import AppButton from "../../components/AppButton";
 import AppInput from "../../components/InputField";
 import { useAuthStore } from "../../store/authStore";
+import { supabase } from "@/src/services/supabase";
 
 export default function SignupScreen({ navigation }: any) {
   const [name, setName] = useState("");
@@ -12,14 +13,62 @@ export default function SignupScreen({ navigation }: any) {
 
   const setUser = useAuthStore((state) => state.setUser);
 
-  function handleSignup() {
+  async function handleSignup() {
+  if (!name || !email || !password) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  try {
     setLoading(true);
 
-    setTimeout(() => {
-      setUser({ name, email });
-      setLoading(false);
-    }, 700);
+    // 1. Create auth user
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    if (!data.user) {
+      alert("Signup failed");
+      return;
+    }
+
+    // 2. Create profile row
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert({
+        id: data.user.id,
+        email,
+        full_name: name,
+        role: "technician",
+      });
+
+    if (profileError) {
+      alert(profileError.message);
+      return;
+    }
+
+    // 3. Save locally
+    setUser({
+      id: data.user.id,
+      email,
+      full_name: name,
+      role: "technician",
+    });
+
+    alert("Account created successfully");
+  } catch (err) {
+    console.log(err);
+    alert("Something went wrong");
+  } finally {
+    setLoading(false);
   }
+}
 
   return (
     <KeyboardAvoidingView
