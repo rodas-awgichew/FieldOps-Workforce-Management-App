@@ -1,11 +1,13 @@
-import { api } from "../../services/api";
 import { Task, TaskStatus } from "./types";
+import { supabase } from "../../services/supabase";
+import { taskApi } from "../../services/api";
 
 const fallbackTasks: Task[] = [
   {
     id: "1",
     title: "Inspect transformer",
-    description: "Check wiring, grounding, and load conditions at the primary pump station.",
+    description:
+      "Check wiring, grounding, and load conditions at the primary pump station.",
     status: "pending",
     assignee: "Maya",
     location: "Pump Station B",
@@ -14,7 +16,8 @@ const fallbackTasks: Task[] = [
   {
     id: "2",
     title: "Install new router",
-    description: "Deploy network router and verify connectivity for the field office.",
+    description:
+      "Deploy network router and verify connectivity for the field office.",
     status: "done",
     assignee: "Leo",
     location: "Field Office 4",
@@ -43,7 +46,8 @@ const fallbackTasks: Task[] = [
   {
     id: "5",
     title: "Audit safety gear",
-    description: "Inspect PPE kits and replenishment inventory at the staging area.",
+    description:
+      "Inspect PPE kits and replenishment inventory at the staging area.",
     status: "pending",
     assignee: "Nia",
     location: "Main Yard",
@@ -51,42 +55,53 @@ const fallbackTasks: Task[] = [
   },
 ];
 
-function mapTodoToTask(todo: any): Task {
-  const status: TaskStatus = todo.completed ? "done" : "pending";
+function mapSupabaseTask(task: any): Task {
   return {
-    id: String(todo.id),
-    title: todo.title ?? `Task ${todo.id}`,
-    description: todo.title
-      ? `Inspect and resolve issues for task ${todo.id}.`
-      : "Field work task requiring verification.",
-    status,
-    assignee: `Tech ${todo.userId ?? "01"}`,
-    location: `Site ${todo.userId ?? "A"}`,
-    dueDate: new Date(Date.now() + ((todo.id % 6) + 1) * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10),
-    completedAt: todo.completed
-      ? new Date(Date.now() - (todo.id % 5) * 3 * 60 * 60 * 1000).toISOString()
-      : undefined,
+    id: String(task.id),
+    title: task.title ?? "Untitled task",
+    description: task.description ?? "No description provided.",
+    status: task.status === "done" ? "done" : "pending",
+    assignee: task.assigned_to ?? "Unassigned",
+    location: task.location ?? "Unknown location",
+    dueDate: task.due_date
+      ? new Date(task.due_date).toISOString().slice(0, 10)
+      : "TBD",
+    completedAt: task.completed_at ?? undefined,
+    imageUrl: task.image_url ?? undefined,
   };
+}
+
+async function getCurrentUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    throw new Error("User not authenticated");
+  }
+  return data.user.id;
 }
 
 export async function fetchTasks(): Promise<Task[]> {
   try {
-    const response = await api.get("/todos?_limit=12");
-    return response.data.map(mapTodoToTask);
+    const userId = await getCurrentUserId();
+    const tasks = await taskApi.getTasks(userId);
+    return tasks.map(mapSupabaseTask);
   } catch (error) {
+    console.error("fetchTasks error:", error);
     return fallbackTasks;
   }
 }
 
-export async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<Task> {
+export async function updateTaskStatus(
+  taskId: string,
+  status: TaskStatus,
+): Promise<Task> {
   try {
-    const response = await api.patch(`/todos/${taskId}`, {
-      completed: status === "done",
-    });
-    return mapTodoToTask({ ...response.data, completed: status === "done" });
+    const updated = await taskApi.updateTask(taskId, {
+      status,
+      completed_at: status === "done" ? new Date().toISOString() : null,
+    } as any);
+    return mapSupabaseTask(updated);
   } catch (error) {
+    console.error("updateTaskStatus error:", error);
     const task = fallbackTasks.find((item) => item.id === taskId);
     if (!task) {
       throw new Error("Task not found");
