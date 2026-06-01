@@ -6,18 +6,45 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow FieldOps to access your camera to take photos of tasks.",
+          "microphonePermission": "Allow FieldOps to access your microphone."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow FieldOps to access your photos.",
+          "cameraPermission": "Allow FieldOps to access your camera."
+        }
+      ]
+    ],
     "web": {
       "bundler": "metro"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs camera access to take photos of tasks in the field",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photos to upload task evidence",
+        "NSMicrophoneUsageDescription": "This app needs microphone access for camera functionality"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO"
+      ]
     },
     "experiments": {}
   }
