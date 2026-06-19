@@ -63,8 +63,7 @@ This project focuses on:
 * Offline support
 * Role-based access
 * Analytics
-* File uploads
-* Map integration
+* File upload
 
 ## Getting Started
 
