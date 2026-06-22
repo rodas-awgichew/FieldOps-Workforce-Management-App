@@ -1,16 +1,15 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as FileSystem from "expo-file-system";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { taskPhotoApi } from "../services/api";
 import { useAuthStore } from "../store/authStore";
-import { useTaskStore } from "../store/taskStore";
 
 interface CameraScreenProps {
   taskId: string;
@@ -27,7 +26,6 @@ export default function CameraScreen({
   const cameraRef = useRef<CameraView>(null);
   const [uploading, setUploading] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
-  const { updateTask } = useTaskStore();
   const { user } = useAuthStore();
   const [facing, setFacing] = useState<"front" | "back">("back");
 
@@ -57,13 +55,11 @@ export default function CameraScreen({
 
   const takePicture = async () => {
     if (!cameraRef.current) return;
-
     try {
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
         base64: false,
       });
-
       setPreviewUri(photo.uri);
     } catch (error) {
       Alert.alert("Error", "Failed to take photo");
@@ -75,29 +71,21 @@ export default function CameraScreen({
 
     setUploading(true);
     try {
-      // Read the file as base64
-      const fileData = await FileSystem.readAsStringAsync(previewUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      const fileName = `photo-${Date.now()}.jpg`;
 
-      // Create blob from base64
-      const blobData = Uint8Array.from(atob(fileData), (c) => c.charCodeAt(0));
-      const file = new File([blobData], `photo-${Date.now()}.jpg`, {
+      const file = {
+        uri: previewUri,
+        name: fileName,
         type: "image/jpeg",
-      });
+      };
 
-      // Upload photo
       const photoData = await taskPhotoApi.uploadTaskPhoto(
         taskId,
         user.id,
         file,
       );
 
-      // Update task with the image URL
-      await updateTask(taskId, {
-        image_url: photoData.photo_url,
-        updated_at: new Date().toISOString(),
-      } as any);
+      console.log("Uploaded photo URL:", photoData.photo_url);
 
       Alert.alert("Success", "Photo uploaded successfully");
       onPhotoTaken?.(photoData.photo_url);
@@ -115,13 +103,17 @@ export default function CameraScreen({
     setPreviewUri(null);
   };
 
+  // ✅ Preview screen now actually shows the captured image
   if (previewUri) {
     return (
       <View className="flex-1 bg-black">
-        {/* Preview Image */}
-        <View className="flex-1 bg-black" />
+    
+        <Image
+          source={{ uri: previewUri }}
+          className="flex-1"
+          resizeMode="contain"
+        />
 
-        {/* Controls */}
         <View className="bg-black px-6 py-8 gap-3">
           <TouchableOpacity
             className="bg-brand-accent px-6 py-3 rounded-lg items-center"
@@ -158,8 +150,7 @@ export default function CameraScreen({
   return (
     <View className="flex-1">
       <CameraView ref={cameraRef} facing={facing} style={{ flex: 1 }}>
-        {/* Header Controls */}
-        <View className="absolute top-0 left-0 right-0 flex-row justify-between items-center px-6 py-6 bg-gradient-to-b from-black/50 to-transparent">
+        <View className="absolute top-0 left-0 right-0 flex-row justify-between items-center px-6 py-6">
           <TouchableOpacity onPress={onClose}>
             <Text className="text-white text-2xl font-bold">✕</Text>
           </TouchableOpacity>
@@ -173,8 +164,7 @@ export default function CameraScreen({
           </TouchableOpacity>
         </View>
 
-        {/* Bottom Controls */}
-        <View className="absolute bottom-0 left-0 right-0 flex-row justify-center items-center px-6 py-8 bg-gradient-to-t from-black/50 to-transparent gap-4">
+        <View className="absolute bottom-0 left-0 right-0 flex-row justify-center items-center px-6 py-8">
           <TouchableOpacity
             className="bg-brand-accent rounded-full w-16 h-16 items-center justify-center border-4 border-white"
             onPress={takePicture}

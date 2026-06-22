@@ -45,6 +45,14 @@ export const authApi = {
   },
 };
 
+// ============== helpers ==============
+
+async function uriToArrayBuffer(uri: string): Promise<ArrayBuffer> {
+  const response = await fetch(uri);
+  if (!response.ok) throw new Error("Failed to read local file");
+  return response.arrayBuffer();
+}
+
 // ============== Profile APIs ==============
 export const profileApi = {
   getProfile: async (userId: string) => {
@@ -85,13 +93,19 @@ export const profileApi = {
     return data as Profile;
   },
 
-  uploadAvatar: async (userId: string, file: File) => {
+  uploadAvatar: async (userId: string, file: { uri: string; name: string; type: string }) => {
     const fileExt = file.name.split(".").pop();
     const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
+    // Convert local URI to ArrayBuffer
+    const arrayBuffer = await uriToArrayBuffer(file.uri);
+
     const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(filePath, file, { upsert: true });
+      .from("avatars") 
+      .upload(filePath, arrayBuffer, {
+        contentType: "image/jpeg",
+        upsert: true,
+      });
 
     if (uploadError) throw uploadError;
 
@@ -200,17 +214,27 @@ export const taskApi = {
 
 // ============== Task Photo APIs ==============
 export const taskPhotoApi = {
-  uploadTaskPhoto: async (taskId: string, userId: string, file: File) => {
+  uploadTaskPhoto: async (
+    taskId: string,
+    userId: string,
+    file: { uri: string; name: string; type: string },
+  ) => {
     const fileExt = file.name.split(".").pop();
     const filePath = `${userId}/${taskId}/${Date.now()}.${fileExt}`;
 
+    // Convert local URI
+    const arrayBuffer = await uriToArrayBuffer(file.uri);
+
     const { error: uploadError } = await supabase.storage
-      .from("task-photos")
-      .upload(filePath, file);
+      .from("task-photos") 
+      .upload(filePath, arrayBuffer, {
+        contentType: "image/jpeg",
+        upsert: false,
+      });
 
     if (uploadError) throw uploadError;
 
-    const { data: publicUrl } = supabase.storage
+    const { data: publicUrlData } = supabase.storage
       .from("task-photos")
       .getPublicUrl(filePath);
 
@@ -219,7 +243,7 @@ export const taskPhotoApi = {
       .insert([
         {
           task_id: taskId,
-          photo_url: publicUrl.publicUrl,
+          photo_url: publicUrlData.publicUrl,
           file_path: filePath,
           captured_at: new Date().toISOString(),
         },
@@ -243,10 +267,8 @@ export const taskPhotoApi = {
   },
 
   deleteTaskPhoto: async (photoId: string, filePath: string) => {
-    // Delete from storage
     await supabase.storage.from("task-photos").remove([filePath]);
 
-    // Delete from database
     const { error } = await supabase
       .from("task_photos")
       .delete()
