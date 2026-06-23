@@ -1,13 +1,13 @@
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import AppButton from "../../components/AppButton";
 import { profileApi } from "../../services/api";
@@ -41,40 +41,45 @@ export default function ProfileScreen() {
     }
   };
 
-  const handlePickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
+ const handlePickImage = async () => {
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
 
-      if (!result.canceled && user?.id) {
-        setUploading(true);
-        const file = {
+    if (!result.canceled && user?.id) {
+      setUploading(true);
+
+      try {
+        const fileName = `avatar-${Date.now()}.jpg`;
+
+        // ✅ Plain object instead of new File() — React Native compatible
+        const fileObject = {
           uri: result.assets[0].uri,
+          name: fileName,
           type: "image/jpeg",
-          name: `avatar-${Date.now()}.jpg`,
         } as any;
-
-        // Convert URI to blob for upload
-        const response = await fetch(result.assets[0].uri);
-        const blob = await response.blob();
-        const fileObject = new File([blob], file.name, { type: file.type });
 
         const updated = await profileApi.uploadAvatar(user.id, fileObject);
         await updateProfile({ avatar_url: updated.avatar_url });
 
         Alert.alert("Success", "Avatar updated successfully");
+      } catch (uploadError: any) {
+        console.error("Upload error:", uploadError);
+        Alert.alert("Error", uploadError.message || "Failed to upload image");
+      } finally {
         setUploading(false);
       }
-    } catch (error) {
-      Alert.alert("Error", "Failed to upload image");
-      setUploading(false);
     }
-  };
-
+  } catch (error) {
+    console.error("Error picking image:", error);
+    Alert.alert("Error", "Failed to pick image");
+    setUploading(false);
+  }
+};
   const handleSignOut = async () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       {
@@ -97,7 +102,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView className="flex-1 bg-brand-bg">
       {/* Header */}
-      <View className="px-4 py-6 border-b border-gray-700">
+      <View className="px-4 pt-4 pb-2 border-b border-gray-700">
         <Text className="text-brand-text text-3xl font-bold">Profile</Text>
         <Text className="text-gray-400 text-sm mt-1">
           Manage your account information
@@ -142,7 +147,7 @@ export default function ProfileScreen() {
           <AppButton
             title={isEditing ? "Cancel" : "Edit"}
             onPress={() => setIsEditing(!isEditing)}
-            style="bg-transparent border border-brand-accent px-3 py-1"
+            style="bg-gray-700 border border-gray-600 px-3 py-1"
           />
         </View>
 

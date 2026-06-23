@@ -7,17 +7,25 @@ import {
   Image,
   ScrollView,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import AppButton from "../../components/AppButton";
 import CameraScreen from "../../components/CameraScreen";
 import { TaskStackParamList } from "../../navigation/TasksStack";
 import { taskPhotoApi } from "../../services/api";
+import { supabase } from "../../services/supabase";
 import { TaskPhoto } from "../../services/supabase";
 import { useAuthStore } from "../../store/authStore";
 import { useTaskStore } from "../../store/taskStore";
 
 type TaskDetailRoute = RouteProp<TaskStackParamList, "TaskDetail">;
+
+// regenerate a fresh public URL from the stored file_path
+function getPublicUrl(filePath: string): string {
+  const { data } = supabase.storage.from("task-photos").getPublicUrl(filePath);
+  return data.publicUrl;
+}
 
 export default function TaskDetailScreen() {
   const route = useRoute<TaskDetailRoute>();
@@ -61,10 +69,7 @@ export default function TaskDetailScreen() {
   const handleImageUpload = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(
-        "Permission required",
-        "Please allow access to your photo library."
-      );
+      Alert.alert("Permission required", "Please allow access to your photo library.");
       return;
     }
 
@@ -74,19 +79,16 @@ export default function TaskDetailScreen() {
       quality: 0.8,
     });
 
-    if (result.canceled || result.assets.length === 0 || !user?.id) {
-      return;
-    }
+    if (result.canceled || result.assets.length === 0 || !user?.id) return;
 
     setUploading(true);
     try {
-      // Logic fix: React Native handles uploads via an object shape, not the 'File' constructor
       const photoAsset = result.assets[0];
       const file = {
         uri: photoAsset.uri,
         name: `photo-${Date.now()}.jpg`,
         type: "image/jpeg",
-      } as any;
+      };
 
       await taskPhotoApi.uploadTaskPhoto(taskId, user.id, file);
       await loadPhotos();
@@ -101,7 +103,6 @@ export default function TaskDetailScreen() {
 
   const handleStatusUpdate = async () => {
     if (!selectedTask) return;
-
     try {
       const nextStatus = selectedTask.status === "done" ? "pending" : "done";
       await updateTask(taskId, {
@@ -124,7 +125,6 @@ export default function TaskDetailScreen() {
           try {
             await taskPhotoApi.deleteTaskPhoto(photoId, filePath);
             await loadPhotos();
-            Alert.alert("Success", "Photo deleted");
           } catch (error) {
             Alert.alert("Error", "Failed to delete photo");
           }
@@ -133,11 +133,31 @@ export default function TaskDetailScreen() {
     ]);
   };
 
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case "done":        return { bg: "bg-green-900", text: "text-green-300" };
+      case "in_progress": return { bg: "bg-blue-900",  text: "text-blue-300"  };
+      default:            return { bg: "bg-gray-700",   text: "text-gray-300"  };
+    }
+  };
+
+  const getPriorityStyle = (priority: string) => {
+    switch (priority) {
+      case "urgent": return { bg: "bg-red-900",    text: "text-red-300"    };
+      case "high":   return { bg: "bg-orange-900", text: "text-orange-300" };
+      case "medium": return { bg: "bg-yellow-900", text: "text-yellow-300" };
+      default:       return { bg: "bg-gray-800",   text: "text-gray-300"   };
+    }
+  };
+
   if (showCamera && user?.id) {
     return (
       <CameraScreen
         taskId={taskId}
-        onPhotoTaken={() => loadPhotos()}
+        onPhotoTaken={() => {
+          loadPhotos();
+          setShowCamera(false);
+        }}
         onClose={() => setShowCamera(false)}
       />
     );
@@ -145,7 +165,7 @@ export default function TaskDetailScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-brand-bg p-4">
+      <View className="flex-1 items-center justify-center bg-brand-bg">
         <ActivityIndicator size="large" color="#F27D26" />
         <Text className="text-brand-text mt-4">Loading task details...</Text>
       </View>
@@ -155,13 +175,16 @@ export default function TaskDetailScreen() {
   if (!selectedTask) {
     return (
       <View className="flex-1 items-center justify-center bg-brand-bg p-4">
-        <Text className="text-brand-text text-lg font-semibold">
+        <Text className="text-brand-text text-lg font-semibold mb-4">
           Task not found
         </Text>
         <AppButton title="Back to tasks" onPress={() => navigation.goBack()} />
       </View>
     );
   }
+
+  const statusStyle  = getStatusStyle(selectedTask.status);
+  const priorityStyle = getPriorityStyle(selectedTask.priority);
 
   return (
     <ScrollView className="flex-1 bg-brand-bg">
@@ -170,38 +193,24 @@ export default function TaskDetailScreen() {
       </View>
 
       <View className="px-4 pb-6">
+        {/* Title + Status */}
         <View className="mb-6">
           <View className="flex-row justify-between items-start mb-2">
-            <Text className="flex-1 text-brand-text text-2xl font-bold">
+            <Text className="flex-1 text-brand-text text-2xl font-bold mr-3">
               {selectedTask.title}
             </Text>
-            <View
-              className={`px-3 py-1 rounded-full ${
-                selectedTask.status === "done"
-                  ? "bg-green-900"
-                  : selectedTask.status === "in_progress"
-                  ? "bg-blue-900"
-                  : "bg-gray-700"
-              }`}
-            >
-              <Text
-                className={`text-sm font-semibold ${
-                  selectedTask.status === "done"
-                    ? "text-green-300"
-                    : selectedTask.status === "in_progress"
-                    ? "text-blue-300"
-                    : "text-gray-300"
-                }`}
-              >
+            <View className={`px-3 py-1 rounded-full ${statusStyle.bg}`}>
+              <Text className={`text-sm font-semibold ${statusStyle.text}`}>
                 {selectedTask.status.replace("_", " ").toUpperCase()}
               </Text>
             </View>
           </View>
-          <Text className="text-gray-400 text-sm">
-            {selectedTask.description}
-          </Text>
+          {selectedTask.description ? (
+            <Text className="text-gray-400 text-sm">{selectedTask.description}</Text>
+          ) : null}
         </View>
 
+        {/* Info Card */}
         <View className="rounded-2xl bg-brand-card p-4 mb-6 border border-gray-700">
           <View className="mb-3 pb-3 border-b border-gray-700">
             <Text className="text-gray-400 text-xs font-medium">ASSIGNED TO</Text>
@@ -227,30 +236,10 @@ export default function TaskDetailScreen() {
             </Text>
           </View>
 
-          <View className="mb-3 pb-3 border-b border-gray-700">
+          <View className={selectedTask.completed_at ? "mb-3 pb-3 border-b border-gray-700" : ""}>
             <Text className="text-gray-400 text-xs font-medium">PRIORITY</Text>
-            <View
-              className={`mt-1 px-2 py-1 rounded w-fit ${
-                selectedTask.priority === "urgent"
-                  ? "bg-red-900"
-                  : selectedTask.priority === "high"
-                  ? "bg-orange-900"
-                  : selectedTask.priority === "medium"
-                  ? "bg-yellow-900"
-                  : "bg-gray-800"
-              }`}
-            >
-              <Text
-                className={`text-sm font-semibold ${
-                  selectedTask.priority === "urgent"
-                    ? "text-red-300"
-                    : selectedTask.priority === "high"
-                    ? "text-orange-300"
-                    : selectedTask.priority === "medium"
-                    ? "text-yellow-300"
-                    : "text-gray-300"
-                }`}
-              >
+            <View className={`mt-1 self-start px-2 py-1 rounded ${priorityStyle.bg}`}>
+              <Text className={`text-sm font-semibold ${priorityStyle.text}`}>
                 {selectedTask.priority?.toUpperCase() || "NORMAL"}
               </Text>
             </View>
@@ -258,9 +247,7 @@ export default function TaskDetailScreen() {
 
           {selectedTask.completed_at && (
             <View>
-              <Text className="text-gray-400 text-xs font-medium">
-                COMPLETED AT
-              </Text>
+              <Text className="text-gray-400 text-xs font-medium">COMPLETED AT</Text>
               <Text className="text-green-400 font-semibold mt-1">
                 {new Date(selectedTask.completed_at).toLocaleString()}
               </Text>
@@ -268,6 +255,7 @@ export default function TaskDetailScreen() {
           )}
         </View>
 
+        {/* Photos Section */}
         <View className="mb-6">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-brand-text text-lg font-bold">
@@ -278,24 +266,33 @@ export default function TaskDetailScreen() {
 
           {photos.length > 0 ? (
             <View className="mb-4">
-              {photos.map((photo) => (
-                <View
-                  key={photo.id}
-                  className="relative rounded-xl overflow-hidden bg-brand-card border border-gray-700 mb-3"
-                >
-                  <Image
-                    source={{ uri: photo.photo_url }}
-                    className="w-full h-48 bg-gray-700"
-                    resizeMode="cover"
-                  />
-                  <View className="absolute bottom-2 right-2">
-                    <AppButton
-                      title="Delete"
-                      onPress={() => handleDeletePhoto(photo.id, photo.file_path)}
+              {photos.map((photo) => {
+                // generate a fresh public URL from file_path
+                const imageUrl = getPublicUrl(photo.file_path);
+                return (
+                  <View
+                    key={photo.id}
+                    className="rounded-xl overflow-hidden bg-brand-card border border-gray-700 mb-3"
+                  >
+                    <Image
+                      source={{ uri: imageUrl }}
+                      style={{ width: "100%", height: 192 }}
+                      resizeMode="cover"
+                      onError={(e) =>
+                        console.log("Image load error:", e.nativeEvent.error, imageUrl)
+                      }
                     />
+                    <View className="p-2 items-end">
+                      <TouchableOpacity
+                        onPress={() => handleDeletePhoto(photo.id, photo.file_path)}
+                        className="bg-red-900 px-3 py-1 rounded-lg"
+                      >
+                        <Text className="text-red-300 text-xs font-bold">Delete</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           ) : (
             <View className="bg-brand-card p-6 rounded-xl border border-gray-700 items-center mb-4">
@@ -319,16 +316,11 @@ export default function TaskDetailScreen() {
           </View>
         </View>
 
-        <View className="gap-3">
-          <AppButton
-            title={
-              selectedTask.status === "done"
-                ? "Mark as Pending"
-                : "Mark as Complete"
-            }
-            onPress={handleStatusUpdate}
-          />
-        </View>
+        {/* Status Toggle */}
+        <AppButton
+          title={selectedTask.status === "done" ? "Mark as Pending" : "Mark as Complete"}
+          onPress={handleStatusUpdate}
+        />
       </View>
     </ScrollView>
   );
