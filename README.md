@@ -1,4 +1,4 @@
-# FieldOps Mobile
+# FieldOps Mobile-App
 
 FieldOps Mobile is a cross-platform task and field operations management app built with React Native and Expo. The app is designed to help teams manage daily tasks, track recent activity, monitor progress, and organize operational workflows through a clean and modern mobile interface.
 
@@ -63,8 +63,7 @@ This project focuses on:
 * Offline support
 * Role-based access
 * Analytics
-* File uploads
-* Map integration
+* File upload
 
 ## Getting Started
 
