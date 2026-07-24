@@ -34,7 +34,6 @@ The app uses a modern dark theme with:
 
 ## Project Structure
 
-```txt id="ffx6pw"
 src/
 ├── components/
 ├── screens/
