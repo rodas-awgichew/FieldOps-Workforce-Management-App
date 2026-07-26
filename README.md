@@ -59,11 +59,8 @@ This project focuses on:
 ## Future Improvements
 
 * Real-time updates
-* Offline support
-* Role-based access
 * Analytics
   
-
 ## Getting Started
 
 Install dependencies:
