@@ -55,11 +55,6 @@ This project focuses on:
 * Scalable frontend structure
 * Industry-standard React Native practices
 * Real-world mobile workflows
-
-## Future Improvements
-
-* Real-time updates
-* Analytics
   
 ## Getting Started
 
